@@ -1,0 +1,251 @@
+
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">  
+  <title>Nov2</title>
+  <style>
+  	body {
+	    background-color: #D6F5FF; 
+	    margin:80px auto; 
+	    text-align:center;
+	    font-size: 17px;
+            line-height: 24px;
+	}
+
+	.a-btn:active {
+            position:relative;
+            top:2px;
+            left:1px;
+        }
+  </style>
+</head>
+
+<body>
+
+  <script>
+
+    var context;
+    var bufferLoader;
+    var kickBuffer = null;
+    var snareBuffer = null
+    var isStopped = true;
+    var isPaused = false;
+    var gainNode; 
+    var drumsSource = null;
+    var bassSource = null;
+    var chordsSource = null;
+    var voxSource = null;
+    var toggleArray = new Array(4);
+    var muteNode;
+    
+    for (var i=0; i<4; i++) {
+      toggleArray[i] = true;
+    }
+ 
+
+//------------BufferLoader stuff
+function BufferLoader(context, urlList, callback) {
+  this.context = context;
+  this.urlList = urlList;
+  this.onload = callback;
+  this.bufferList = new Array();
+  this.loadCount = 0;
+}
+
+BufferLoader.prototype.loadBuffer = function(url, index) {
+  // Load buffer asynchronously
+  var request = new XMLHttpRequest();
+  request.open("GET", url, true);
+  request.responseType = "arraybuffer";
+
+  var loader = this;
+
+  request.onload = function() {
+    // Asynchronously decode the audio file data in request.response
+    loader.context.decodeAudioData(
+      request.response,
+      function(buffer) {
+        if (!buffer) {
+          alert('error decoding file data: ' + url);
+          return;
+        }
+        loader.bufferList[index] = buffer;
+        if (++loader.loadCount == loader.urlList.length)
+          loader.onload(loader.bufferList);
+      },
+      function(error) {
+        console.error('decodeAudioData error', error);
+      }
+    );
+  }
+
+  request.onerror = function() {
+    alert('BufferLoader: XHR error');
+  }
+
+  request.send();
+}
+
+BufferLoader.prototype.load = function() {
+  for (var i = 0; i < this.urlList.length; ++i)
+  this.loadBuffer(this.urlList[i], i);
+}
+//------------End of buffer loader stuff
+
+
+    window.addEventListener('load', init, false);
+    function init() {
+      try {
+        context = new webkitAudioContext();
+        gainNode = context.createGainNode();
+        muteNode = context.createGainNode();
+        muteNode.gain.value = 0.0;
+        gainNode.connect(context.destination);
+        muteNode.connect(context.destination);
+      }
+      catch(e) {
+        alert('Web Audio API is not supported in this browser.  Bummer!');
+      }
+      bufferLoader = new BufferLoader(
+        context,
+        [
+          'audio/Nov2_kick2.mp3',
+          'audio/snare.mp3',
+          'audio/drums.mp3',
+          'audio/bass.mp3',
+          'audio/chords.mp3',
+          'audio/vox.mp3',
+        ],
+        finishedLoading
+        );
+      bufferLoader.load();      
+    }
+    
+    function finishedLoading(bufferList) {
+      // copy the buffers in the list to global variables
+      kickBuffer = bufferList[0];
+      snareBuffer = bufferList[1];
+      
+      drumsSource = createSource(bufferList[2]);   
+      bassSource = createSource(bufferList[3]);    
+      chordsSource = createSource(bufferList[4]);  
+      voxSource = createSource(bufferList[5]);
+      document.getElementById('title').innerHTML='November 2';
+      document.getElementById('title2').innerHTML='F is for kick, J is for snare (on your keyboard!).';      
+    } 
+
+    function createSource(buffer) {
+      var source = context.createBufferSource();
+      source.buffer = buffer;
+      source.loop = false;
+      source.connect(gainNode); //gainNode and muteNode connected to context.destination in init()
+      return(source);
+    }
+ 
+    function playSound(buffer) { 
+      var source = context.createBufferSource();
+      source.buffer = buffer; 
+      source.loop = false;
+      source.connect(context.destination);
+      source.noteOn(0); // Play immediately.
+    } 
+
+    function playBackingTrack() {
+      if (isStopped) { 
+        bassSource.connect(gainNode);
+        bassSource.noteOn(0);
+        voxSource.noteOn(0);
+        chordsSource.noteOn(0);
+        drumsSource.noteOn(0);
+        isStopped = false;
+      }  
+      if (isPaused) {
+        gainNode.connect(context.destination);
+        muteNode.connect(context.destination);
+        isPaused = false;
+      }
+    } 
+
+    function pauseBackingTrack() {
+      if (!isPaused) {
+        gainNode.disconnect();
+        muteNode.disconnect();
+        isPaused = true;
+      }
+    }
+
+    function stopBackingTrack() {
+      if (!isStopped) {
+        bassSource.noteOff(0);
+        voxSource.noteOff(0);
+        chordsSource.noteOff(0);
+        drumsSource.noteOff(0);
+        isStopped = true;
+        history.go(0);  //just refresh because you cant call noteOn() after noteOff()
+      }   
+    }
+
+    function toggle(theIndex, source, e1) {
+      if (toggleArray[theIndex] == true) {
+  	source.disconnect();
+  	source.connect(muteNode);
+        e1.style.background = '#5d5d5d';
+        toggleArray[theIndex] = false;
+      } else {
+        source.connect(gainNode);
+        e1.style.background = '#FFFFFF';
+        toggleArray[theIndex] = true;
+      }
+    }
+  
+    document.onkeydown = function(event) {  
+      var keyCode = event.keyCode;
+      if (keyCode == 70) {
+        playSound(kickBuffer);
+      }  
+      if (keyCode == 74) {
+        playSound(snareBuffer);      
+      }
+    }
+ 
+    document.onkeyup = function(event){
+
+    }
+  
+  </script> 
+  
+  <h1 id="title">Loading...</h1>  
+
+  <p id="title2">Should be ready in less than 15 seconds.</p>
+
+  <br>
+
+  <button onclick="playBackingTrack();" class="a-btn"; style="color: transparent; background-color: transparent; border-color: transparent; cursor: pointer;">
+    <img src="assets/PlayButton190Fix.gif" />
+  </button>
+     &nbsp; 
+     &nbsp; 
+  <button onclick="pauseBackingTrack();" class="a-btn"; style="color: transparent; background-color: transparent; border-color: transparent; cursor: pointer;">
+    <img src="assets/PauseButton190.gif" />
+  </button>
+     &nbsp; 
+     &nbsp;    
+  <button onclick="stopBackingTrack();" class="a-btn"; style="color: transparent; background-color: transparent; border-color: transparent; cursor: pointer;">
+    <img src="assets/StopButton190.gif" />
+  </button>
+      
+  <br><br><br>
+ 
+  <button style="background-color: #FFFFFF; border-color: transparent; cursor: pointer; height: 95px; width: 145px"onclick="toggle(0,drumsSource,this)">Drums</button>
+     &nbsp;
+  <button style="background-color: #FFFFFF; border-color: transparent; cursor: pointer; height: 95px; width: 145px"onclick="toggle(1,bassSource,this)">Bass</button>
+     &nbsp;
+  <button style="background-color: #FFFFFF; border-color: transparent; cursor: pointer; height: 95px; width: 145px"onclick="toggle(2,chordsSource,this)">Chords</button>  
+     &nbsp; 
+  <button style="background-color: #FFFFFF; border-color: transparent; cursor: pointer; height: 95px; width: 145px"onclick="toggle(3,voxSource,this)">Vox</button>
+      
+  
+</body>
+
+</html>
