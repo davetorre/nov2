@@ -2,6 +2,7 @@ var context,
     bufferLoader,
     bufferList = [],
     music,
+    finishedLoading,
     playButton = document.getElementById('playButton'),
     pauseButton = document.getElementById('pauseButton'),
     stopButton = document.getElementById('stopButton'),
@@ -57,7 +58,6 @@ finishedLoading = function () {
         }
     };
     
-        
     bassButton.onclick = function () {
         music.toggleTrack(1);
         if (music.tracks[1].muted) {
