@@ -10,7 +10,7 @@ var context,
     bassButton = document.getElementById('bassButton'),
     chordsButton = document.getElementById('chordsButton'),
     voxButton = document.getElementById('voxButton');
- 
+
 bufferLoader = {
     loadCount: 0,
     urlList: ["audio/drums.mp3",
@@ -57,7 +57,7 @@ finishedLoading = function () {
             drumsButton.style.background = "#FFFFFF";
         }
     };
-    
+
     bassButton.onclick = function () {
         music.toggleTrack(1);
         if (music.tracks[1].muted) {
@@ -66,7 +66,7 @@ finishedLoading = function () {
             bassButton.style.background = "#FFFFFF";
         }
     };
-    
+
     chordsButton.onclick = function () {
         music.toggleTrack(2);
         if (music.tracks[2].muted) {
@@ -96,8 +96,8 @@ finishedLoading = function () {
     stopButton.onclick = function () {
         music.stop();
     };
-    
-    document.onkeydown = function(event) {
+
+    document.onkeydown = function (event) {
         var keyCode = event.keyCode;
         var buffer, source;
         switch (keyCode) {
@@ -116,7 +116,7 @@ finishedLoading = function () {
         source.connect(context.destination);
         source.start(context.currentTime);
     };
-    
+
     document.getElementById('title').innerHTML = 'November 2';
     document.getElementById('title2').innerHTML =
             'F is for kick, J is for snare (on your keyboard!).';
@@ -191,7 +191,7 @@ window.onload = function () {
         alert("No web audio support in this browser :(");
         return;
     }
-    
+
     // load all audio files
-    bufferLoader.load();      
+    bufferLoader.load();
 };
